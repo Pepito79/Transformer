@@ -20,8 +20,3 @@ The goal is to understand and reproduce the core building blocks of a Transforme
   - Encoder and Decoder blocks  
 - Modular design for experimentation and visualization
 - Easy to extend for NLP or sequence-to-sequence tasks
-
----
-
-## 🧠 Architecture Overview
-![alt text](image.png)
