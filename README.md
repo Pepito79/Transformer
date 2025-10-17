@@ -24,4 +24,4 @@ The goal is to understand and reproduce the core building blocks of a Transforme
 ---
 
 ## 🧠 Architecture Overview
-
+![alt text](image.png)
