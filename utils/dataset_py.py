@@ -11,6 +11,14 @@ def causal_mask(size:int):
     
 class BillingualDataset(Dataset):
     def __init__(self,ds,src_lang,tgt_lang,max_len ,src_tokenizer,tgt_tokenizer):
+        """
+        ds: the dataset that we will use
+        src_lang: source language
+        tgt_lan: target language
+        max_len : max len of the dataset 
+        src_tokenizer : source tokenizer
+        tgt_tokenizer: target tokenizer
+        """
         super().__init__()
         self.ds = ds
         self.src_lang = src_lang
@@ -19,14 +27,24 @@ class BillingualDataset(Dataset):
         self.tgt_tokenizer = tgt_tokenizer
         self.max_len = max_len
     
-        self.sos_token = torch.tensor([src_tokenizer.token_to_id("SOS")], dtype = torch.int64)
-        self.pad_token = torch.tensor([src_tokenizer.token_to_id("PAD")] , dtype = torch.int64)
-        self.eos_token = torch.tensor([src_tokenizer.token_to_id("EOS")] , dtype = torch.int64)
+        self.sos_token = torch.tensor([src_tokenizer.token_to_id("[SOS]")], dtype = torch.int64)
+        self.pad_token = torch.tensor([src_tokenizer.token_to_id("[PAD]")] , dtype = torch.int64)
+        self.eos_token = torch.tensor([src_tokenizer.token_to_id("[EOS]")] , dtype = torch.int64)
+        
         
     def __len__(self):
         return len(self.ds)
     
     def __getitem__(self, index):
+        """
+        Here are the steps to get access to the final index-th element of the dataset:
+            1) Take the initial index-th element ds[index]  
+            2) Split the translation attributes   
+            3) Embedd the src and tgt text
+            4) Add the padding for every embedding to have the same dimensions 
+            5) Concat every embedding with the SOS , EOS and PAD
+            6) Do the same thing with the label tensor 
+        """
         src_lang = self.src_lang
         tgt_lang = self.tgt_lang
         src_tgt_pair = self.ds[index]
@@ -48,7 +66,7 @@ class BillingualDataset(Dataset):
         encoder_input = torch.cat(
             [
                self.sos_token,
-               torch.tensor([enc_input_tokens], dtype=torch.int64),
+               torch.tensor(enc_input_tokens, dtype=torch.int64),
                self.eos_token,
                torch.tensor([self.pad_token] * enc_num_pad , dtype=torch.int64)
             ]
@@ -57,7 +75,7 @@ class BillingualDataset(Dataset):
         decoder_input = torch.cat(
             [
                 self.sos_token,
-                torch.tensor([dec_input_tokens], dtype=torch.int64),
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
                 torch.tensor([self.pad_token] * dec_num_pad , dtype=torch.int64)
 
             ]
@@ -65,7 +83,7 @@ class BillingualDataset(Dataset):
         
         label = torch.cat(
             [
-                torch.tensor([dec_input_tokens], dtype=torch.int64),
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
                 self.eos_token,
                 torch.tensor([self.pad_token] * dec_num_pad , dtype=torch.int64)
                 
@@ -78,9 +96,9 @@ class BillingualDataset(Dataset):
         
         return {
             "encoder_input": encoder_input ,
-            "deocder_input": decoder_input,
+            "decoder_input": decoder_input,
             "label":label,
-            # But i will also need a mask to ignore the PAD tokens during the attention mechanism
+            # But we will also need a mask to ignore the PAD tokens during the attention mechanism
             "encoder_mask": (encoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int(), # (1,1,max_len)
             "decoder_mask": (decoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int() & causal_mask(decoder_input.size(0)),
             "src_text": src_text,
