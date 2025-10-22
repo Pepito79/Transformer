@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 
 def causal_mask(size:int):
-    mask = torch.triu(input=torch.ones((size,size)), diagonal=1).type(torch.int)
+    mask = torch.triu(input=torch.ones((1,size,size)), diagonal=1).type(torch.int)
     #We have an lower zero diag matrix but we want and upper one
     return mask == 0
     
@@ -52,11 +52,11 @@ class BillingualDataset(Dataset):
         tgt_text = src_tgt_pair['translation'][tgt_lang]
         
         enc_input_tokens = self.src_tokenizer.encode(src_text).ids # [1,5,23,19] for example for one sentance : output is a list
-        dec_input_tokens = self.tgt_tokenizer.encode(src_text).ids # [1,5,23,19] for example for one sentance
+        dec_input_tokens = self.tgt_tokenizer.encode(tgt_text).ids # [1,5,23,19] for example for one sentance
         
         #Every sequence has a variable len and we want to have the same length for every sentance
         enc_num_pad = self.max_len - len(enc_input_tokens) - 2 #We have the EOS and SOS tokens
-        dec_num_pad = self.max_len - len(enc_input_tokens) - 1 # We only have the SOS token for the decoder
+        dec_num_pad = self.max_len - len(dec_input_tokens) - 1 # We only have the SOS token for the decoder
         
          
         if enc_num_pad < 0 or dec_num_pad <0 :
@@ -69,7 +69,7 @@ class BillingualDataset(Dataset):
                torch.tensor(enc_input_tokens, dtype=torch.int64),
                self.eos_token,
                torch.tensor([self.pad_token] * enc_num_pad , dtype=torch.int64)
-            ]
+            ], dim=0
         )
         
         decoder_input = torch.cat(
@@ -78,7 +78,7 @@ class BillingualDataset(Dataset):
                 torch.tensor(dec_input_tokens, dtype=torch.int64),
                 torch.tensor([self.pad_token] * dec_num_pad , dtype=torch.int64)
 
-            ]
+            ], dim=0
         )
         
         label = torch.cat(
@@ -87,12 +87,14 @@ class BillingualDataset(Dataset):
                 self.eos_token,
                 torch.tensor([self.pad_token] * dec_num_pad , dtype=torch.int64)
                 
-            ]
+            ],dim=0
         )
         
         assert encoder_input.size(0) == self.max_len 
         assert decoder_input.size(0) == self.max_len 
         assert label.size(0) == self.max_len
+        
+        
         
         return {
             "encoder_input": encoder_input ,
@@ -100,7 +102,7 @@ class BillingualDataset(Dataset):
             "label":label,
             # But we will also need a mask to ignore the PAD tokens during the attention mechanism
             "encoder_mask": (encoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int(), # (1,1,max_len)
-            "decoder_mask": (decoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int() & causal_mask(decoder_input.size(0)),
+            "decoder_mask": (decoder_input != self.pad_token).unsqueeze(0).int() & causal_mask(decoder_input.size(0)),
             "src_text": src_text,
             "tgt_txt": tgt_text
         }
