@@ -228,8 +228,11 @@ def train_model(config):
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
 
-            run_validation(model=model,validation_ds=val_dataloader,tokenizer_src=tokenizer_src,tokenizer_tgt=tokenizer_tgt,device=device,print_msg=lambda msg: batch_iterator.write(msg),max_len=config['seq_len'])      
             global_step += 1
+        
+        
+        run_validation(model=model,validation_ds=val_dataloader,tokenizer_src=tokenizer_src,tokenizer_tgt=tokenizer_tgt,device=device,print_msg=lambda msg: batch_iterator.write(msg),max_len=config['seq_len'])      
+
         
         #Save at every epoch the model 
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
