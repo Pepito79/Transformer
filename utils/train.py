@@ -38,7 +38,7 @@ def greedy_decoder(model: Transformer ,source,source_mask, tgt_tokenizer : Token
     #Use the encoder to have a bette represenation of words (we compute it once)
     encoder_output = model.encode(source,source_mask)
     #Give to the deocder the first token which is the SOS token
-    decoder_input = torch.empty(1,1).type_as(source).fill_(sos_id).to(device)
+    decoder_input = torch.empty(1,1).fill_(sos_id).type_as(source).to(device)
 
     while True:
         if decoder_input.size(1) == max_len:
@@ -50,13 +50,13 @@ def greedy_decoder(model: Transformer ,source,source_mask, tgt_tokenizer : Token
         _,next_token = torch.max(prob,dim=1)
         decoder_input = torch.concat([
             decoder_input,
-            torch.empty(1,1).type_as(source).fill_(next_token.item())
+            torch.empty(1,1).type_as(source).fill_(next_token.item()).to(device)
         ], dim=1)
         
         if next_token == eos_token:
             break
         
-        #We return the finale sentance without the batch dimension (which is 1)
+    #We return the finale sentance without the batch dimension (which is 1)
     return decoder_input.squeeze(0)
         
 def run_validation(model: Transformer,validation_ds,tokenizer_src:Tokenizer,tokenizer_tgt: Tokenizer,device,print_msg, max_len:int,num_examples =2):
@@ -188,7 +188,7 @@ def train_model(config):
         optimizer.load_state_dict(state['optimizer_state_dict'])
         global_step = state["global_step"]
 
-    loss_fn= nn.CrossEntropyLoss(ignore_index= tokenizer_src.token_to_id("[PAD]"),label_smoothing=0.1).to(device)
+    loss_fn= nn.CrossEntropyLoss(ignore_index= tokenizer_tgt.token_to_id("[PAD]"),label_smoothing=0.1).to(device)
 
     for epoch in range(initial_epoch,config["num_epochs"]):
 

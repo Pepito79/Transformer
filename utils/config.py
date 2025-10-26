@@ -1,4 +1,6 @@
 from pathlib import Path
+import os 
+
 def get_config():
     return {
         "batch_size":5,
@@ -8,7 +10,7 @@ def get_config():
         "d_model":512,
         "lang_src": "fr",
         "lang_tgt": "it",
-        "model_folder":"weights",
+        "model_folder": "/home/pepito/Documents/Python/ML/weights",
         "model_basename":"tmodel_",
         "preload": None,
         "tokenizer_file":"tokenizer_{0}.json",
@@ -17,8 +19,9 @@ def get_config():
     
 
 def get_weights_file_path(config, epoch: str):
-    model_folder = config['model_folder']
+    model_folder = Path(config["model_folder"])
+    model_folder.mkdir(parents=True, exist_ok=True)  # crée le dossier ./weights s'il n'existe pas
     model_basename = config["model_basename"]
-    model_filename= f'{model_basename}{epoch}.pt'
-    return Path(".")/model_folder/model_filename
+    model_filename = f"{model_basename}{epoch}.pt"
+    return model_folder / model_filename
     
